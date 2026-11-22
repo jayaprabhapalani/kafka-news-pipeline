@@ -21,9 +21,9 @@ PARTITIONS={
 }
 
 # Free APIs - no key needed for these
-# newsapi.org needs a free key → sign up at newsapi.org (free)
-NEWS_API_KEY = "your_newsapi_key_here"
-NEWS_API_URL = "https://newsapi.org/v2/top-headlines"
+# newsdata.io (free, no credit card)
+NEWS_API_KEY = "your_newsdata_api_key_here"
+NEWS_API_URL = "https://newsdata.io/api/1/news"
 
 # OpenWeatherMap - free key
 WEATHER_API_KEY = "your_openweather_key_here"

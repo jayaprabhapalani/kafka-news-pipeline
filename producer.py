@@ -25,15 +25,27 @@ def create_producer(acks='all'):
 # ─── Fetch News ───────────────────────────────────────────────────────────────
 def fetch_news(category):
     """ Fetch top headlines for a category from NewsAPI """
+    """
+    newsdata.io API params:
+    - apikey  : your key
+    - category: technology / sports / business / health
+    - language: en
+    - country : us
+    """
     try:
         response=requests.get(NEWS_API_URL,params={
-            "apiKey":NEWS_API_KEY,
+            "apikey":NEWS_API_KEY,
             "category":category,
-            "country":"us",
-            "pageSize":5       # 5 articles per category per fetch
+           "language": "en",
+            "country": "us",
         })
         data=response.json()
-        return data.get("articles",[])
+        
+        if data.get("status") != "success":
+            print(f"⚠️  API error for {category}: {data.get('message')}")
+            return []
+        
+        return data.get("results", [])
     except Exception as e:
         print(f"Error fetching news for {category}: {e}")
         return []
@@ -45,13 +57,14 @@ def publish_articles(producer,articles,category):
             continue
         
         event={
-            "title": article["title"],
-            "source": article["source"]["name"],
-            "category": category,
-            "url": article["url"],
-            "published_at": article["publishedAt"],
-            "description": article.get("description", ""),
-            "is_breaking": "breaking" in article["title"].lower()  # simulate breaking news flag
+            "title":        article.get("title", ""),
+            "source":       article.get("source_id", "unknown"),   
+            "category":     category,
+            "url":          article.get("link", ""),               
+            "published_at": article.get("pubDate", ""),            
+            "description":  article.get("description", ""),
+            "country":      article.get("country", []),            
+            "is_breaking":  "breaking" in (article.get("title") or "").lower()  # simulate breaking news flag
         }
         # KEY = category → same category always goes to same partition
         # This guarantees ordering within a category
@@ -81,6 +94,11 @@ if __name__ =="__main__":
             for category in CATEGORIES:
                 articles=fetch_news(category)
                 publish_articles(producer, articles, category)
+                
+            
+            # newsdata.io free = 200 req/day
+            # 4 categories × 1 req = 4 req per loop
+            # sleep 60s → 4 × 24 × 60/60 = 96 req/day → safely under limit    
             print(f" Sleeping 30 seconds...")
             time.sleep(30) # NewsAPI free tier: 100 req/day, so be careful
             
